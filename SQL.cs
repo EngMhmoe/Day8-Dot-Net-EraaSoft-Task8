@@ -1,163 +1,227 @@
+-- =============================================
+-- PHARMACY DATABASE - FIXED & BEST PRACTICES
+-- Author: Mohamed Alwany
+-- =============================================
+
+
+-- =============================================
+-- SECTION 1: CREATE TABLES
+-- =============================================
 
 -- 1. PHARMA_COMPANY
 CREATE TABLE PHARMA_COMPANY (
-    Company_Name VARCHAR(100) PRIMARY KEY,
-    Address VARCHAR(255) NOT NULL,
-    Phone VARCHAR(20) NOT NULL
+    Company_ID   INT PRIMARY KEY,
+    Company_Name VARCHAR(100) UNIQUE,   -- UNIQUE عشان مايتكررش
+    Address      VARCHAR(255),
+    Phone        VARCHAR(20)
 );
 
 
--- 2.  DOCTOR
+-- 2. DOCTOR
 CREATE TABLE DOCTOR (
-    Doctor_ID VARCHAR(20) PRIMARY KEY,
-    Name VARCHAR(100) NOT NULL,
-    Email VARCHAR(100) NOT NULL,
-    Phone VARCHAR(20) NOT NULL,
-    Specialty VARCHAR(100) NOT NULL,
-    Years_Of_Experience INT NOT NULL CHECK (Years_Of_Experience >= 0)
+    Doctor_ID          INT PRIMARY KEY,
+    Name               VARCHAR(100),
+    Email              VARCHAR(100) UNIQUE,
+    Phone              VARCHAR(20),
+    Specialty          VARCHAR(100),
+    Years_Of_Experience INT CHECK (Years_Of_Experience >= 0)
 );
 
 
--- 3.  PATIENT
+-- 3. PATIENT
 CREATE TABLE PATIENT (
-    UR_Number VARCHAR(20) PRIMARY KEY,
-    Name VARCHAR(100) NOT NULL,
-    Address VARCHAR(255) NOT NULL,
-    Age INT NOT NULL CHECK (Age > 0),
-    Email VARCHAR(100) NOT NULL,
-    Phone VARCHAR(20) NOT NULL,
-    Medicare_Card_Number VARCHAR(20) UNIQUE NULL, -- اختياري زي التاسك
-    Primary_Doctor_ID VARCHAR(20) NOT NULL,
+    UR_Number          VARCHAR(20)  PRIMARY KEY,
+    Name               VARCHAR(100),
+    Address            VARCHAR(255),
+    Age                INT   CHECK (Age > 0),
+    Email              VARCHAR(100) UNIQUE,
+    Phone              VARCHAR(20) ,
+    Medicare_Card_Number VARCHAR(20) UNIQUE,
+    Primary_Doctor_ID  INT,
     FOREIGN KEY (Primary_Doctor_ID) REFERENCES DOCTOR(Doctor_ID)
 );
 
 
--- 4.  DRUG - PK  + Cascade Delete
+-- 4. DRUG
 CREATE TABLE DRUG (
-    Trade_Name VARCHAR(100) NOT NULL,
-    Strength VARCHAR(50) NOT NULL,
-    Company_Name VARCHAR(100) NOT NULL,
-    PRIMARY KEY (Trade_Name, Strength), 
-    FOREIGN KEY (Company_Name) REFERENCES PHARMA_COMPANY(Company_Name)
-        ON DELETE CASCADE -- 
+    Trade_Name   VARCHAR(100),
+    Strength     VARCHAR(50) ,
+    Company_ID   INT,
+    PRIMARY KEY (Trade_Name, Strength),
+    FOREIGN KEY (Company_ID) REFERENCES PHARMA_COMPANY(Company_ID)
+        ON DELETE CASCADE
 );
 
 
--- 5.   PRESCRIPTION  M:N:M
+-- 5. PRESCRIPTION
 CREATE TABLE PRESCRIPTION (
-    UR_Number VARCHAR(20) NOT NULL,
-    Doctor_ID VARCHAR(20) NOT NULL,
-    Trade_Name VARCHAR(100) NOT NULL,
-    Strength VARCHAR(50) NOT NULL,
-    Prescription_Date DATE NOT NULL,
-    Quantity INT NOT NULL CHECK (Quantity > 0),
-    PRIMARY KEY (UR_Number, Doctor_ID, Trade_Name, Strength, Prescription_Date), -- PK 
-    
-    FOREIGN KEY (UR_Number) REFERENCES PATIENT(UR_Number),
-    FOREIGN KEY (Doctor_ID) REFERENCES DOCTOR(Doctor_ID),
-    FOREIGN KEY (Trade_Name, Strength) REFERENCES DRUG(Trade_Name, Strength) -- FK 
+    Prescription_ID   INT IDENTITY(1,1) PRIMARY KEY,  -- PK بسيط وواضح
+    UR_Number         VARCHAR(20) ,
+    Doctor_ID         INT     ,
+    Trade_Name        VARCHAR(100),
+    Strength          VARCHAR(50),
+    Prescription_Date DATE ,
+    Quantity          INT CHECK (Quantity > 0),
+
+    FOREIGN KEY (UR_Number)              REFERENCES PATIENT(UR_Number),
+    FOREIGN KEY (Doctor_ID)              REFERENCES DOCTOR(Doctor_ID),
+    FOREIGN KEY (Trade_Name, Strength)   REFERENCES DRUG(Trade_Name, Strength)
 );
-------------------------------------------------------
-    ph1--m drug
-    doctor1---m pathent
-    pathint1--m perscripthion
-    doctor1---m perscripthion
-    drug1--m perscriphion
--------------------------------------------------------
-    
 
-----. 1-SELECT 
-SELECT * FROM Doctor;
 
----. 2-ORDER BY 
-SELECT * 
-FROM Patient ORDER BY Age ASC;
 
-----. 3-OFFSET FETCH 
-SELECT * 
-FROM Patient ORDER BY UR_Number OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
 
------. 4-SELECT TOP 
-SELECT TOP 5
-* FROM Doctor;
+-- 1. SELECT
+SELECT * FROM DOCTOR;
 
-----. 5-SELECT DISTINCT 
-SELECT DISTINCT
-Address FROM Patient;
-
-----. 6-WHERE 
+-- 2. ORDER BY
 SELECT *
-FROM Patient WHERE Age = 25;
+FROM PATIENT
+ORDER BY Age ASC;
 
-----. 7-NULL 
+-- 3. OFFSET FETCH - Pagination
 SELECT *
-FROM Patient WHERE Email IS NULL;
+FROM PATIENT
+ORDER BY UR_Number
+OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
 
-----. 8-AND 
+-- 4. 
+SELECT TOP 5 *
+FROM DOCTOR;
+
+-- 5
+SELECT DISTINCT Address
+FROM PATIENT;
+
+-- 6. 
 SELECT *
-FROM Doctor WHERE YearsOfExperience > 5 AND Specialty = 'Cardiology';
+FROM PATIENT
+WHERE Age = 25;
 
--- 9-IN 
+-- 7. 
 SELECT *
-FROM Doctor WHERE Specialty IN ('Cardiology', 'Dermatology');
+FROM PATIENT
+WHERE Email IS NULL;
 
----. 10-BETWen
+-- 8. AND
 SELECT *
-FROM Patient WHERE Age BETWEEN 18 AND 30;
+FROM DOCTOR
+WHERE Years_Of_Experience > 5
+  AND Specialty = 'Cardiology';
 
---. 11-LIKE 
+-- 9. 
 SELECT *
-FROM Doctor WHERE Name LIKE 'Dr.%';
+FROM DOCTOR
+WHERE Specialty IN ('Cardiology', 'Dermatology');
 
---. 12-Aliases 
-SELECT Name
-AS DoctorName, Email AS DoctorEmail FROM Doctor;
+-- 10. BETWEEN 
+SELECT *
+FROM PATIENT
+WHERE Age BETWEEN 18 AND 30;
 
--- . 13-JOIN 
-SELECT P.Name AS PatientName, 
-Pr.* FROM Prescription Pr JOIN Patient P ON Pr.UR_Number = P.UR_Number;
+-- 11. LIKE 
+SELECT *
+FROM DOCTOR
+WHERE Name LIKE 'Dr.%';
 
---. 14-GROUP BY 
-SELECT Address AS City
-, COUNT(*) AS PatientCount FROM Patient GROUP BY address;
+-- 12. Aliases 
+SELECT Name  AS DoctorName,
+       Email AS DoctorEmail
+FROM DOCTOR;
 
---. 15-HAVING 
-SELECT Address AS City
-, COUNT(*) AS PatientCount FROM Patient GROUP BY address HAVING COUNT(*) > 3;
+-- 13. JOIN
+SELECT P.Name AS PatientName,
+       Pr.*
+FROM PRESCRIPTION Pr
+JOIN PATIENT P ON Pr.UR_Number = P.UR_Number;
 
---. 16-EXISTS 
-SELECT * FROM Patient 
-P WHERE EXISTS (SELECT 1 FROM Prescription Pr WHERE Pr.UR_Number = P.UR_Number);
+-- 14. GROUP BY
+SELECT Address    AS City,
+       COUNT(*)   AS PatientCount
+FROM PATIENT
+GROUP BY Address;
 
--- . 17-UNION 
-SELECT Name
-, 'Doctor' AS Type FROM Doctor UNION SELECT Name, 'Patient' AS Type FROM Patient;
+-- 15. HAVING
+SELECT Address    AS City,
+       COUNT(*)   AS PatientCount
+FROM PATIENT
+GROUP BY Address
+HAVING COUNT(*) > 3;
 
---. 18-INSERT Doctor 
-INSERT INTO Doctor
-(DoctorID, Name, Email, Phone, Specialty, YearsOfExperience) VALUES (2, 'Dr. Temp', 'temp@mail.com', '012', 'Neurology', 3);
+-- 16. EXISTS
+SELECT *
+FROM PATIENT P
+WHERE EXISTS (
+    SELECT 1
+    FROM PRESCRIPTION Pr
+    WHERE Pr.UR_Number = P.UR_Number
+);
 
---. 19-INSERT Patient 
-INSERT INTO Patient 
-(UR_Number, Name, Age, Address, Email, Phone) VALUES ('UR2', 'Temp Patient', 30, 'Alex', 'temp@mail.com', '012');
+-- 17. UNION
+SELECT Name, 'Doctor'  AS Type FROM DOCTOR
+UNION
+SELECT Name, 'Patient' AS Type FROM PATIENT;
 
---. 20-UPDATE 
-UPDATE Doctor
-SET Phone = '099';
 
--- . 21-UPDATE JOIN 
-UPDATE P SET P.Address
-= 'Giza' FROM Patient P JOIN Prescription Pr ON P.UR_Number = Pr.UR_Number;
+-- =============================================
+-- SECTION 3: INSERT
+-- =============================================
 
--- . 22-DELETE 
-DELETE FROM
-Patient;
+-- 18. INSERT Doctor
+INSERT INTO DOCTOR (Name, Email, Phone, Specialty, Years_Of_Experience)
+VALUES ('Dr. Temp', 'temp@mail.com', '01200000000', 'Neurology', 3)
 
--- 23-TRANSACTION 
+-- 19. INSERT Patient 
+INSERT INTO PATIENT (UR_Number, Name, Address, Age, Email, Phone, Primary_Doctor_ID)
+VALUES ('UR002', 'Temp Patient', 'Alexandria', 30, 'temppatient@mail.com', '01000000000', 1);
+
+
+-- =============================================
+-- SECTION 4: UPDATE
+-- =============================================
+
+-- 20. UPDATE 
+UPDATE DOCTOR
+SET Phone = '01099999999'
+WHERE Doctor_ID = 1;
+
+-- 21. UPDATE JOIN
+UPDATE P
+SET P.Address = 'Giza'
+FROM PATIENT P
+JOIN PRESCRIPTION Pr ON P.UR_Number = Pr.UR_Number;
+
+
+-- =============================================
+-- SECTION 5: DELETE
+-- =============================================
+
+-- 22. DELETE
+DELETE FROM PATIENT
+WHERE UR_Number = 'UR002';
+
+
+-- =============================================
+-- SECTION 6: TRANSACTION
+-- =============================================
+
+-- 23. TRANSACTION
 BEGIN TRANSACTION;
 
-INSERT INTO Doctor (DoctorID, Name, Email, Specialty) VALUES (3, 'Dr. New', 'new@mail.com', 'Pediatrics');
+BEGIN TRY
+    INSERT INTO DOCTOR (Name, Email, Phone, Specialty, Years_Of_Experience)
+    VALUES ('Dr. New', 'new@mail.com', '01100000000', 'Pediatrics', 5);
 
-INSERT INTO Patient (UR_Number, Name, Age, PrimaryDoctorID) VALUES ('UR3', 'New Patient', 15, 3);
+    DECLARE @NewDoctorID INT = SCOPE_IDENTITY();
 
-COMMIT TRANSACTION;
+    INSERT INTO PATIENT (UR_Number, Name, Address, Age, Email, Phone, Primary_Doctor_ID)
+    VALUES ('UR003', 'New Patient', 'Cairo', 15, 'newpatient@mail.com', '01200000000', @NewDoctorID);
+
+    COMMIT TRANSACTION;
+    PRINT 'Transaction completed successfully';
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    PRINT 'Error occurred - Transaction rolled back ❌';
+    PRINT ERROR_MESSAGE();
+END CATCH;
